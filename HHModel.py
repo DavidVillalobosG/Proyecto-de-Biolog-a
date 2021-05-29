@@ -112,8 +112,9 @@ def CalcularFrecuencia(t,V):
 
     # Se calcula el período como la diferencia en t entre los dos máximos locales encontrados
     periodo = t[indiceMax2] - t[indiceMax1]
+    frecuencia = 1000/periodo # Hz
 
-    return 1/periodo
+    return frecuencia
 
 # Espacio de tiempo a trabajar, en ms
 t = np.linspace(0,100,1000)
@@ -175,7 +176,7 @@ plt.show()
 fig, ax = plt.subplots(figsize=(12, 7))
 ax.plot(listaAmplitudes, listaFrecuencias)
 ax.set_xlabel('Amplitud de la corriente de estímulo (microA/cm^2)')
-ax.set_ylabel('Frecuencia de respuesta (kHz)')
+ax.set_ylabel('Frecuencia de respuesta (Hz)')
 ax.set_title('Relación entre la amplitud del estímulo y la frecuencia de respuesta')
 plt.grid()
 plt.show()
