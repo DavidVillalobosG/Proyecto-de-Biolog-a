@@ -5,22 +5,24 @@ import matplotlib.pyplot as plt
 import scipy.integrate as scp
 
 
+
 # Definición de parámetros globales
 
 Cm = 1  #(microF/cm^2)
 gk = 36  #(mS/cm^2)
-Vk = -12  #(mV) # Cambio de signo
+Vk = -12  #(mV)
 gNa = 120  #(mS/cm^2)
-VNa = 115  #(mV) # Cambio de signo
+VNa = 115  #(mV)
 gl = 0.3  #(mS/cm^2)
-Vl = 10.613  #(mV) # Cambio de signo
+Vl = 10.613  #(mV)
+
 
 
 # Definición de funciones
 
 def EcuacionDiferencial (y,t,i):
     """
-    Estable el sistema de ecuaciones diferenciales a resolver
+    Establece el sistema de ecuaciones diferenciales a resolver
     :param y: Arreglo con los valores de Vm, h, m y n
     :param t: Arreglo con los valores de t
     :param i: Amplitud de la corriente de estímulo
@@ -33,12 +35,13 @@ def EcuacionDiferencial (y,t,i):
     m = y[2]
     n = y[3]
 
-    dy[0] = Estimulo(t,i)/Cm - gk*n**4*(Vm-Vk)/Cm - gNa*m**3*h*(Vm-VNa)/Cm - gl*(Vm-Vl)/Cm  # Ecuación 13, dV/dt
+    dy[0] = Estimulo(t, i)/Cm - gk*n**4*(Vm-Vk)/Cm - gNa*m**3*h*(Vm-VNa)/Cm - gl*(Vm-Vl)/Cm  # Ecuación 13, dV/dt
     dy[1] = alfaH(Vm)*(1-h)-betaH(Vm)*h  # Ecuación 10, dh/dt
     dy[2] = alfaM(Vm)*(1-m)-betaM(Vm)*m  # Ecuación 7, dm/dt
     dy[3] = alfaN(Vm)*(1-n)-betaN(Vm)*n  # Ecuación 4, dn/dt
 
     return dy
+
 
 # Función estímulo
 
@@ -76,7 +79,7 @@ def betaM (Vm):
     return 4*np.exp(-Vm/18)  # Ecuación 9
 
 def alfaN (Vm):
-    return (10-Vm)/(100*(np.exp((10-Vm)/10)-1))  # Ecuación 5 revizar
+    return (10-Vm)/(100*(np.exp((10-Vm)/10)-1))  # Ecuación 5
 
 def betaN (Vm):
     return 0.125*np.exp(-Vm/80)  # Ecuación 6
@@ -116,14 +119,28 @@ def CalcularFrecuencia(t,V):
 
     return frecuencia
 
+
+# Evalúa los valores de corriente en el modelo teórico
+def RespuestaFrecuenciaTeorica(I):
+    cita = 27*np.log(I+1)
+    return cita
+
+# Evalua los valores de corriente en el modelo de ajuste
+def RespuestaFrecuenciaAjuste(I):
+    citaAj = 26.904*np.log(I)+1.3729
+    return citaAj
+
+
+# Main
+
 # Espacio de tiempo a trabajar, en ms
 t = np.linspace(0,100,1000)
 
 # Estado inicial
 V0 = 0
-h0 = alfaH(0)/(alfaH(0)+betaH(0))
-m0 = alfaM(0)/(alfaM(0)+betaM(0))
-n0 = alfaN(0)/(alfaN(0)+betaN(0))
+h0 = alfaH(V0)/(alfaH(V0)+betaH(V0))
+m0 = alfaM(V0)/(alfaM(V0)+betaM(V0))
+n0 = alfaN(V0)/(alfaN(V0)+betaN(V0))
 
 # Se almacenan las condiciones iniciales en un arreglo
 y0 = np.array([V0,h0,m0,n0])
@@ -135,6 +152,7 @@ i3 = 14
 i4 = 20
 
 # Se soluciona la EDO
+# Se resta -70 para graficar la tensión absoluta en vez de la diferencia con respecto al potencial de reposo
 resultado1 = scp.odeint(EcuacionDiferencial, y0, t, args=(i1,)) - 70
 resultado2 = scp.odeint(EcuacionDiferencial, y0, t, args=(i2,)) - 70
 resultado3 = scp.odeint(EcuacionDiferencial, y0, t, args=(i3,)) - 70
@@ -148,7 +166,7 @@ resultado4 = scp.odeint(EcuacionDiferencial, y0, t, args=(i4,)) - 70
 listaAmplitudes = np.linspace(15,400,800)
 # Se inicializa una lista para almacenar las respuestas obtenidas para cada amplitud de corriente
 listaRespuestas = []
-# Se inicializa una lista para almacenar las frecuencias para cada respuesta
+# Se inicializan listas para almacenar las frecuencias para cada respuesta
 listaFrecuencias = []
 listaFrecuenciasTeorica = []
 listaFrecuenciasAjuste = []
@@ -160,23 +178,17 @@ for i in listaAmplitudes:
 for irespuesta in listaRespuestas:
     listaFrecuencias.append(CalcularFrecuencia(t, irespuesta))
 
-#Evalua los valores de corriente en el modelo teórico
-def RespuestaFrecuenciaTeorica(I):
-    cita = 27*np.log(I+1)
-    return cita
-#Evalua los valores de corriente en el modelo de ajuste
-def RespuestaFrecuenciaAjuste(I):
-    citaAj = 26.904*np.log(I)+1.3729
-    return citaAj
-
+# Se calcula y almacena la frecuencia teórica y la frecuencia obtenida con el modelo de ajuste
 for i in range(0, len(listaAmplitudes)):
     teoria = RespuestaFrecuenciaTeorica(listaAmplitudes[i])
     ajuste = RespuestaFrecuenciaAjuste(listaAmplitudes[i])
     listaFrecuenciasTeorica.append(teoria)
     listaFrecuenciasAjuste.append(ajuste)
 
-#Se grafican los resultados
 
+# Se grafican los resultados
+
+# Potencial en la neurona para diversas amplitudes de corriente de estímulo
 fig, ax = plt.subplots(figsize=(12, 7))
 ax.plot(t, resultado1[:, 0])
 ax.plot(t, resultado2[:, 0])
@@ -189,6 +201,7 @@ plt.legend(['2 microA/cm^2', '8 microA/cm^2', '14 microA/cm^2', '20 microA/cm^2'
 plt.grid()
 plt.show()
 
+# Frecuencia de respuesta en función de la amplitud de la corriente de estímulo, obtenida por simulación
 fig, ax = plt.subplots(figsize=(12, 7))
 ax.plot(listaAmplitudes, listaFrecuencias)
 ax.set_xlabel('Amplitud de la corriente de estímulo (microA/cm^2)')
@@ -197,6 +210,7 @@ ax.set_title('Relación entre la amplitud del estímulo y la frecuencia de respu
 plt.grid()
 plt.show()
 
+# Comparación entre la relación teórica y la modelada
 fig, ax = plt.subplots(figsize = (12,7))
 ax.plot(listaAmplitudes, listaFrecuenciasTeorica)
 ax.plot(listaAmplitudes, listaFrecuenciasAjuste)
